@@ -1,0 +1,125 @@
+Option Explicit
+
+Public beszerző As String
+Public NewWb As Workbook
+
+Sub CreateSingleXLS()
+    
+    Application.DisplayAlerts = False
+    Application.ScreenUpdating = False
+    
+    Dim myArray() As Variant
+    Dim lastrow As Long
+    Dim lastcolumn As Long
+    Dim MainWb As Workbook
+    Dim MainWS As Worksheet
+    Dim NewWs As Worksheet
+    Dim r As Long
+    Dim c As Long
+    Dim x As Long
+    
+    If Dir("K:\Finance\AP_AR\AP\Áreltéréses listák\" & Date, vbDirectory) = vbNullString Then
+        MkDir ("K:\Finance\AP_AR\AP\Áreltéréses listák\" & Date)
+    End If
+    
+    Let x = 2
+    Let beszerző = shMail.Range("F1").Value
+    Set MainWb = ThisWorkbook
+    Set NewWb = Workbooks.Add: NewWb.SaveAs ("K:\Finance\AP_AR\AP\Áreltéréses listák\" & Date & "\" & beszerző & ".xls")
+    Set NewWs = NewWb.Worksheets(1): NewWs.Name = beszerző: NewWs.Tab.Color = VBA.ColorConstants.vbRed
+    Set MainWS = shMain
+    Let lastrow = shMain.Range("B" & Rows.Count).End(xlUp).Row
+    Let lastcolumn = shMain.Range("XFD4").End(xlToLeft).Column
+    
+    
+    ReDim myArray(5 To lastrow, 2 To lastcolumn) As Variant
+    For r = LBound(myArray, 1) To UBound(myArray) Step 1
+        For c = LBound(myArray, 2) To UBound(myArray, 2) Step 1
+            myArray(r, c) = shMain.Cells(r, c)
+        Next c
+    Next r
+    
+    shMain.Range("B4:V4").Copy NewWs.Range("A1")
+    
+    For r = LBound(myArray, 1) To UBound(myArray, 1) Step 1
+         If myArray(r, 16) = "Open" Then
+            If myArray(r, 12) = beszerző Or myArray(r, 13) = beszerző Then
+                For c = LBound(myArray, 2) To UBound(myArray, 2) Step 1
+                    NewWs.Cells(x, c).Value = myArray(r, c)
+                Next c
+                x = x + 1
+            End If
+        End If
+    Next r
+    
+    NewWs.UsedRange.Columns.AutoFit
+    NewWb.Close (True)
+    
+    Call SendMail
+    
+    Set MainWb = Nothing
+    Set NewWb = Nothing
+    Set MainWS = Nothing
+    Set NewWs = Nothing
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
+    
+End Sub
+
+Sub CreateMassXLS()
+
+    Dim x As Long
+    Let x = 2
+    
+    Do Until shMail.Range("A" & x).Value = vbNullString
+    shMail.Range("F1").Value = shMail.Range("A" & x)
+    Call CreateSingleXLS
+    x = x + 1
+    Loop
+    
+    MsgBox "Script is finished."
+   
+End Sub
+
+Sub SendMail()
+    
+    Dim olApp As Outlook.Application
+    Dim olMail As Outlook.MailItem
+
+    Set olApp = New Outlook.Application
+    Set olMail = olApp.CreateItem(olMailItem)
+    
+    With olMail
+        .BodyFormat = olFormatHTML
+        .Display
+        .Subject = Date & "_" & "Áreltéréses számlák"
+        .Body = "Szia!" & vbNewLine & vbNewLine & "Csatolva a számlák." & vbNewLine & vbNewLine & "Köszönöm" & .Body
+        .Attachments.Add "K:\Finance\AP_AR\AP\Áreltéréses listák\" & Date & "\" & beszerző & ".xls"
+        
+        Select Case beszerző
+            Case Is = "Zsuzsanna Szabados"
+                .To = "zsuzsanna.szabados@ haldex.com"
+            Case Is = "Erika Takács"
+                .To = "erika.takacs@haldex.com"
+            Case Is = "László Kerek"
+                .To = "laszlo.kerek@haldex.com"
+            Case Is = "Attila Pesti"
+                .To = "attila.pesti@haldex.com"
+            Case Is = "Phil McShane"
+                .To = "phil.mcshane@haldex.com"
+            Case Is = "Anikó Klabacsek"
+                .To = "aniko.klabacsek@haldex.com"
+            Case Is = "Csaba Horváth"
+                .To = "csaba.horvath@haldex.com"
+            Case Is = "Dávid Jakus"
+                .To = "david.jakus@haldex.com"
+            Case Is = "László Kerek"
+                .To = "laszlo.kerek@haldex.com"
+            Case Is = "Sándor Pesti"
+                .To = "sandor.pesti@haldex.com"
+       End Select
+        '.Send
+    End With
+    Set olApp = Nothing
+    Set olMail = Nothing
+End Sub
